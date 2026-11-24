@@ -1,0 +1,6 @@
+{
+  "name": "Fısıltı",
+  "description": "Kimliğinizi ifşa etmeden ortak ilgi alanlarına göre gerçek zamanlı eşleşip güvenle sohbet edebileceğiniz Türkçe anonim sohbet platformu.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
