@@ -5,6 +5,7 @@ export const tr = {
   },
   nav: {
     home: 'Ana Sayfa',
+    promo: 'Tanıtım',
     rules: 'Kurallar ve KVKK',
     darkMode: 'Koyu Tema',
     lightMode: 'Açık Tema',

@@ -6,6 +6,7 @@ import {
   Check,
   ChevronDown,
   Lock,
+  PlayCircle,
   Radio,
   ShieldCheck,
   SlidersHorizontal,
@@ -52,6 +53,7 @@ export function ConsentLobbyView({
   onToggleInterest,
   onConsentChange,
   onOpenLegal,
+  onOpenPromo,
   onStartMatching,
   onDeleteData,
 }: {
@@ -68,6 +70,7 @@ export function ConsentLobbyView({
   onToggleInterest: (tag: string) => void;
   onConsentChange: (patch: Partial<ConsentFormState>) => void;
   onOpenLegal: (doc: LegalDocType) => void;
+  onOpenPromo: () => void;
   onStartMatching: () => void;
   onDeleteData: () => void;
 }) {
@@ -80,6 +83,7 @@ export function ConsentLobbyView({
     consentState.termsAccepted &&
     consentState.privacyAccepted &&
     consentState.cookieAccepted;
+  const hasSavedConsent = Boolean(consentTimestamp) && allConsented;
 
   return (
     <div className="relative overflow-hidden min-h-[calc(100dvh-56px)] sm:min-h-[calc(100dvh-64px)]">
@@ -137,6 +141,15 @@ export function ConsentLobbyView({
               <p className="text-xs sm:text-base text-[#54656F] dark:text-[#9CB0BA] max-w-md leading-relaxed">
                 {tr.lobby.subheadline}
               </p>
+
+              <button
+                type="button"
+                onClick={onOpenPromo}
+                className="min-h-[40px] inline-flex items-center gap-2 text-xs sm:text-sm font-semibold text-[#008069] dark:text-[#25D366] hover:underline underline-offset-4 transition-colors"
+              >
+                <PlayCircle className="w-4 h-4 shrink-0" />
+                <span>Sesli Tanıtım Videosunu İzle</span>
+              </button>
             </div>
 
             {/* Desktop Storytelling Pillars (hidden below consent card on mobile for instant thumb CTA) */}
@@ -164,7 +177,9 @@ export function ConsentLobbyView({
             <div className="flex items-center justify-between gap-2 pb-1 border-b border-[#E9EDEF] dark:border-[#2A3942]">
               <div className="flex items-center gap-2 text-xs sm:text-sm font-semibold text-[#111B21] dark:text-[#E9EDEF]">
                 <ShieldCheck className="w-4 h-4 text-[#00A884] shrink-0" />
-                <span>{tr.consent.sectionTitle}</span>
+                <span>
+                  {hasSavedConsent ? 'Hızlı Giriş Hazır' : tr.consent.sectionTitle}
+                </span>
               </div>
               <span className="inline-flex items-center gap-1 text-[11px] text-[#54656F] dark:text-[#8696A0]">
                 <Lock className="w-3 h-3 text-[#00A884]" />
@@ -172,106 +187,134 @@ export function ConsentLobbyView({
               </span>
             </div>
 
-            {/* 4 Mandatory Tactile Checkboxes */}
-            <div className="space-y-2">
-              <label className="min-h-[46px] flex items-center gap-3 px-3.5 py-2.5 rounded-xl border border-[#E9EDEF] dark:border-[#2A3942] bg-[#F8FAFB]/80 dark:bg-[#111B21]/65 hover:border-[#00A884]/50 cursor-pointer transition-colors">
-                <input
-                  type="checkbox"
-                  checked={consentState.ageConfirmed}
-                  onChange={(e) =>
-                    onConsentChange({ ageConfirmed: e.target.checked })
-                  }
-                  className="sr-only"
-                />
-                <AnimatedCheck checked={consentState.ageConfirmed} />
-                <span className="text-xs sm:text-sm text-[#111B21] dark:text-[#E9EDEF] leading-snug">
-                  {tr.consent.ageLabel}
-                </span>
-              </label>
-
-              <div className="min-h-[46px] flex items-center gap-3 px-3.5 py-2.5 rounded-xl border border-[#E9EDEF] dark:border-[#2A3942] bg-[#F8FAFB]/80 dark:bg-[#111B21]/65 hover:border-[#00A884]/50 transition-colors">
-                <label
-                  htmlFor="consent-terms"
-                  className="flex items-center cursor-pointer shrink-0"
-                >
-                  <input
-                    id="consent-terms"
-                    type="checkbox"
-                    checked={consentState.termsAccepted}
-                    onChange={(e) =>
-                      onConsentChange({ termsAccepted: e.target.checked })
-                    }
-                    className="sr-only"
-                  />
-                  <AnimatedCheck checked={consentState.termsAccepted} />
-                </label>
-                <div className="text-xs sm:text-sm text-[#111B21] dark:text-[#E9EDEF] leading-snug">
-                  <label htmlFor="consent-terms" className="cursor-pointer">
-                    {tr.consent.termsPrefix}{' '}
-                  </label>
+            {hasSavedConsent ? (
+              <div className="rounded-2xl border border-[#00A884]/35 bg-[#E7FCE3]/60 dark:bg-[#005C4B]/25 px-4 py-3.5 space-y-2">
+                <div className="flex items-center gap-2 text-xs sm:text-sm font-semibold text-[#008069] dark:text-[#25D366]">
+                  <Check className="w-4 h-4 shrink-0" />
+                  <span>18+ Yaş, Kurallar, KVKK ve Çerez onayların kayıtlı.</span>
+                </div>
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-[#54656F] dark:text-[#9CB0BA]">
                   <button
                     type="button"
                     onClick={() => onOpenLegal('terms')}
-                    className="text-[#008069] dark:text-[#25D366] underline underline-offset-2 font-medium"
+                    className="hover:text-[#008069] dark:hover:text-[#25D366] underline underline-offset-2"
                   >
                     {tr.consent.termsLink}
                   </button>
-                </div>
-              </div>
-
-              <div className="min-h-[46px] flex items-center gap-3 px-3.5 py-2.5 rounded-xl border border-[#E9EDEF] dark:border-[#2A3942] bg-[#F8FAFB]/80 dark:bg-[#111B21]/65 hover:border-[#00A884]/50 transition-colors">
-                <label
-                  htmlFor="consent-privacy"
-                  className="flex items-center cursor-pointer shrink-0"
-                >
-                  <input
-                    id="consent-privacy"
-                    type="checkbox"
-                    checked={consentState.privacyAccepted}
-                    onChange={(e) =>
-                      onConsentChange({ privacyAccepted: e.target.checked })
-                    }
-                    className="sr-only"
-                  />
-                  <AnimatedCheck checked={consentState.privacyAccepted} />
-                </label>
-                <div className="text-xs sm:text-sm text-[#111B21] dark:text-[#E9EDEF] leading-snug">
-                  <label htmlFor="consent-privacy" className="cursor-pointer">
-                    {tr.consent.privacyPrefix}{' '}
-                  </label>
+                  <span aria-hidden="true">·</span>
                   <button
                     type="button"
                     onClick={() => onOpenLegal('privacy')}
-                    className="text-[#008069] dark:text-[#25D366] underline underline-offset-2 font-medium"
+                    className="hover:text-[#008069] dark:hover:text-[#25D366] underline underline-offset-2"
                   >
                     {tr.consent.privacyLink}
                   </button>
                 </div>
               </div>
+            ) : (
+              <>
+                {/* 4 Mandatory Tactile Checkboxes */}
+                <div className="space-y-2">
+                  <label className="min-h-[46px] flex items-center gap-3 px-3.5 py-2.5 rounded-xl border border-[#E9EDEF] dark:border-[#2A3942] bg-[#F8FAFB]/80 dark:bg-[#111B21]/65 hover:border-[#00A884]/50 cursor-pointer transition-colors">
+                    <input
+                      type="checkbox"
+                      checked={consentState.ageConfirmed}
+                      onChange={(e) =>
+                        onConsentChange({ ageConfirmed: e.target.checked })
+                      }
+                      className="sr-only"
+                    />
+                    <AnimatedCheck checked={consentState.ageConfirmed} />
+                    <span className="text-xs sm:text-sm text-[#111B21] dark:text-[#E9EDEF] leading-snug">
+                      {tr.consent.ageLabel}
+                    </span>
+                  </label>
 
-              <label className="min-h-[46px] flex items-center gap-3 px-3.5 py-2.5 rounded-xl border border-[#E9EDEF] dark:border-[#2A3942] bg-[#F8FAFB]/80 dark:bg-[#111B21]/65 hover:border-[#00A884]/50 cursor-pointer transition-colors">
-                <input
-                  type="checkbox"
-                  checked={consentState.cookieAccepted}
-                  onChange={(e) =>
-                    onConsentChange({ cookieAccepted: e.target.checked })
-                  }
-                  className="sr-only"
-                />
-                <AnimatedCheck checked={consentState.cookieAccepted} />
-                <span className="text-xs sm:text-sm text-[#111B21] dark:text-[#E9EDEF] leading-snug">
-                  {tr.consent.cookieLabel}
-                </span>
-              </label>
-            </div>
+                  <div className="min-h-[46px] flex items-center gap-3 px-3.5 py-2.5 rounded-xl border border-[#E9EDEF] dark:border-[#2A3942] bg-[#F8FAFB]/80 dark:bg-[#111B21]/65 hover:border-[#00A884]/50 transition-colors">
+                    <label
+                      htmlFor="consent-terms"
+                      className="flex items-center cursor-pointer shrink-0"
+                    >
+                      <input
+                        id="consent-terms"
+                        type="checkbox"
+                        checked={consentState.termsAccepted}
+                        onChange={(e) =>
+                          onConsentChange({ termsAccepted: e.target.checked })
+                        }
+                        className="sr-only"
+                      />
+                      <AnimatedCheck checked={consentState.termsAccepted} />
+                    </label>
+                    <div className="text-xs sm:text-sm text-[#111B21] dark:text-[#E9EDEF] leading-snug">
+                      <label htmlFor="consent-terms" className="cursor-pointer">
+                        {tr.consent.termsPrefix}{' '}
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => onOpenLegal('terms')}
+                        className="text-[#008069] dark:text-[#25D366] underline underline-offset-2 font-medium"
+                      >
+                        {tr.consent.termsLink}
+                      </button>
+                    </div>
+                  </div>
 
-            {/* Short Safety Warning */}
-            <div className="rounded-xl border border-amber-300/70 dark:border-amber-800/60 bg-amber-50/85 dark:bg-amber-950/30 px-3.5 py-2.5 flex items-center gap-2.5">
-              <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
-              <p className="text-xs text-amber-950 dark:text-amber-100 leading-snug">
-                {tr.consent.warningBox}
-              </p>
-            </div>
+                  <div className="min-h-[46px] flex items-center gap-3 px-3.5 py-2.5 rounded-xl border border-[#E9EDEF] dark:border-[#2A3942] bg-[#F8FAFB]/80 dark:bg-[#111B21]/65 hover:border-[#00A884]/50 transition-colors">
+                    <label
+                      htmlFor="consent-privacy"
+                      className="flex items-center cursor-pointer shrink-0"
+                    >
+                      <input
+                        id="consent-privacy"
+                        type="checkbox"
+                        checked={consentState.privacyAccepted}
+                        onChange={(e) =>
+                          onConsentChange({ privacyAccepted: e.target.checked })
+                        }
+                        className="sr-only"
+                      />
+                      <AnimatedCheck checked={consentState.privacyAccepted} />
+                    </label>
+                    <div className="text-xs sm:text-sm text-[#111B21] dark:text-[#E9EDEF] leading-snug">
+                      <label htmlFor="consent-privacy" className="cursor-pointer">
+                        {tr.consent.privacyPrefix}{' '}
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => onOpenLegal('privacy')}
+                        className="text-[#008069] dark:text-[#25D366] underline underline-offset-2 font-medium"
+                      >
+                        {tr.consent.privacyLink}
+                      </button>
+                    </div>
+                  </div>
+
+                  <label className="min-h-[46px] flex items-center gap-3 px-3.5 py-2.5 rounded-xl border border-[#E9EDEF] dark:border-[#2A3942] bg-[#F8FAFB]/80 dark:bg-[#111B21]/65 hover:border-[#00A884]/50 cursor-pointer transition-colors">
+                    <input
+                      type="checkbox"
+                      checked={consentState.cookieAccepted}
+                      onChange={(e) =>
+                        onConsentChange({ cookieAccepted: e.target.checked })
+                      }
+                      className="sr-only"
+                    />
+                    <AnimatedCheck checked={consentState.cookieAccepted} />
+                    <span className="text-xs sm:text-sm text-[#111B21] dark:text-[#E9EDEF] leading-snug">
+                      {tr.consent.cookieLabel}
+                    </span>
+                  </label>
+                </div>
+
+                {/* Short Safety Warning */}
+                <div className="rounded-xl border border-amber-300/70 dark:border-amber-800/60 bg-amber-50/85 dark:bg-amber-950/30 px-3.5 py-2.5 flex items-center gap-2.5">
+                  <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
+                  <p className="text-xs text-amber-950 dark:text-amber-100 leading-snug">
+                    {tr.consent.warningBox}
+                  </p>
+                </div>
+              </>
+            )}
 
             {error && (
               <div

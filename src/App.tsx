@@ -9,30 +9,64 @@ import {
 } from './components/ConsentLobbyView';
 import { LegalModal, type LegalDocType } from './components/LegalModal';
 import { MatchingView } from './components/MatchingView';
+import { PromoVideoView } from './components/PromoVideoView';
 import { ReportModal } from './components/ReportModal';
 import { tr } from './i18n';
 import type { AppPhase, ChatMessage, MatchInfo } from './types/chat';
 import { playMatchSound, playMessageSound } from './utils/sound';
 
+function resolveRouteFromPath(): 'home' | 'admin' | 'promo' {
+  if (window.location.pathname === '/admingiris') return 'admin';
+  if (window.location.pathname === '/tanitim') return 'promo';
+  return 'home';
+}
+
+const CONSENT_STORAGE_KEY = 'fisilti_consent_v1';
+
+interface SavedConsentMeta {
+  accepted: boolean;
+  sessionId?: string;
+  acceptedAt?: string;
+}
+
+function readSavedConsent(): SavedConsentMeta | null {
+  try {
+    const raw = window.localStorage.getItem(CONSENT_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as SavedConsentMeta;
+    if (parsed && parsed.accepted === true && typeof parsed.acceptedAt === 'string') {
+      return parsed;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 export default function App() {
-  const [route, setRoute] = useState<'home' | 'admin'>(() =>
-    window.location.pathname === '/admingiris' ? 'admin' : 'home',
+  const initialConsent = readSavedConsent();
+  const [route, setRoute] = useState<'home' | 'admin' | 'promo'>(
+    resolveRouteFromPath,
   );
   const [darkMode, setDarkMode] = useState<boolean>(true);
   const [muted, setMuted] = useState<boolean>(false);
 
   const [activeUsers, setActiveUsers] = useState<number | null>(null);
-  const [sessionId, setSessionId] = useState<string | null>(null);
-  const [consentTimestamp, setConsentTimestamp] = useState<string | null>(null);
+  const [sessionId, setSessionId] = useState<string | null>(
+    initialConsent?.sessionId || null,
+  );
+  const [consentTimestamp, setConsentTimestamp] = useState<string | null>(
+    initialConsent?.acceptedAt || null,
+  );
   const [dailyRemaining, setDailyRemaining] = useState<number | null>(null);
 
   const [nickname, setNickname] = useState('');
   const [selectedInterests, setSelectedInterests] = useState<string[]>([]);
   const [consentState, setConsentState] = useState<ConsentFormState>({
-    ageConfirmed: false,
-    termsAccepted: false,
-    privacyAccepted: false,
-    cookieAccepted: false,
+    ageConfirmed: Boolean(initialConsent?.accepted),
+    termsAccepted: Boolean(initialConsent?.accepted),
+    privacyAccepted: Boolean(initialConsent?.accepted),
+    cookieAccepted: Boolean(initialConsent?.accepted),
   });
 
   const [phase, setPhase] = useState<AppPhase>('lobby');
@@ -71,10 +105,10 @@ export default function App() {
     }
   }, [darkMode]);
 
-  // Hidden /admingiris SPA route (no public navigation link anywhere)
+  // Hidden /admingiris and /tanitim SPA routes
   useEffect(() => {
     const onPop = () => {
-      setRoute(window.location.pathname === '/admingiris' ? 'admin' : 'home');
+      setRoute(resolveRouteFromPath());
     };
     window.addEventListener('popstate', onPop);
     return () => window.removeEventListener('popstate', onPop);
@@ -85,6 +119,13 @@ export default function App() {
       window.history.pushState({}, '', '/');
     }
     setRoute('home');
+  }
+
+  function navigatePromo() {
+    if (window.location.pathname !== '/tanitim') {
+      window.history.pushState({}, '', '/tanitim');
+    }
+    setRoute('promo');
   }
 
   // Initial active user stats before consent
@@ -390,6 +431,18 @@ export default function App() {
       setSessionId(sid);
       setConsentTimestamp(data.acceptedAt);
       setDailyRemaining(data.dailyRemaining);
+      try {
+        window.localStorage.setItem(
+          CONSENT_STORAGE_KEY,
+          JSON.stringify({
+            accepted: true,
+            sessionId: sid,
+            acceptedAt: data.acceptedAt,
+          }),
+        );
+      } catch {
+        // ignore storage restrictions
+      }
 
       const ws = await ensureWebSocket(sid);
       ws.send(
@@ -502,17 +555,25 @@ export default function App() {
   }
 
   async function handleDeleteData() {
-    if (!sessionId) return;
     try {
-      const res = await fetch('/api/session/delete', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sessionId }),
-      });
-      const data = await res.json();
+      let msg = 'Verileriniz silindi.';
+      if (sessionId) {
+        const res = await fetch('/api/session/delete', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sessionId }),
+        });
+        const data = await res.json();
+        if (data?.message) msg = data.message;
+      }
       if (wsRef.current) {
         wsRef.current.close();
         wsRef.current = null;
+      }
+      try {
+        window.localStorage.removeItem(CONSENT_STORAGE_KEY);
+      } catch {
+        // ignore
       }
       setSessionId(null);
       setConsentTimestamp(null);
@@ -529,7 +590,7 @@ export default function App() {
         cookieAccepted: false,
       });
       setPhase('lobby');
-      pushToast(data.message || 'Verileriniz silindi.');
+      pushToast(msg);
     } catch {
       pushToast('Veri silme işlemi sırasında hata oluştu.');
     }
@@ -560,6 +621,15 @@ export default function App() {
               }`}
             >
               {tr.nav.home}
+            </button>
+            <button
+              type="button"
+              onClick={navigatePromo}
+              className={`min-h-[36px] px-1 hover:text-white transition-colors whitespace-nowrap shrink-0 ${
+                route === 'promo' ? 'text-white font-semibold' : ''
+              }`}
+            >
+              {tr.nav.promo}
             </button>
             <button
               type="button"
@@ -598,6 +668,8 @@ export default function App() {
       <main className="flex-1">
         {route === 'admin' ? (
           <AdminPanelView />
+        ) : route === 'promo' ? (
+          <PromoVideoView onStartApp={navigateHome} />
         ) : phase === 'lobby' ? (
           <ConsentLobbyView
             activeUsers={activeUsers}
@@ -615,6 +687,7 @@ export default function App() {
               setConsentState((prev) => ({ ...prev, ...patch }))
             }
             onOpenLegal={(doc) => setLegalDoc(doc)}
+            onOpenPromo={navigatePromo}
             onStartMatching={handleStartMatching}
             onDeleteData={handleDeleteData}
           />
